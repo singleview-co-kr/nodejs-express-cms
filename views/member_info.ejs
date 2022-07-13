@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+  <title> New Document </title>
+  <meta name="Generator" content="EditPlus">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+ </head>
+
+ <body>
+  <form>
+	<h2>welcome member: <%=u_name%></h2>
+	<input type='hidden' name='name' value="<%=u_name%>">
+	pw: <input type='password' name='pw' value="<%=u_pw%>">
+  </form>
+  <button class='ajaxsend'>modify</button>
+  <button onclick="location.href='/logout'">logout</button>
+  <div class='result'></div>
+  <script>
+  document.querySelector('.ajaxsend').addEventListener('click', function() {
+	var name = document.forms[0].elements[0].value;
+	if(!name.length)
+	{
+		document.querySelector('.result').innerHTML = 'invalid_name';
+		return;
+	}
+	var pw = document.forms[0].elements[1].value;
+	if(!pw.length)
+	{
+		document.querySelector('.result').innerHTML = 'invalid_pw';
+		return;
+	}
+	var inputdata = {'name': name, 'pw': pw};
+	ajax_send('http://<%=http_hostname%>:<%=http_port%>/modify', inputdata);
+	function ajax_send(url, inputdata) {
+		var data = JSON.stringify(inputdata);  //console.log(JSON.stringify({x:5, y:6}));
+		var xhr = new XMLHttpRequest();
+		xhr.open('POST', url);
+		xhr.setRequestHeader('Content-type', 'application/json');
+		xhr.send(data);
+		xhr.addEventListener('load', function() {
+			var result = JSON.parse(xhr.responseText);
+			if(result.bRst){
+				window.location.href = '/';
+				//document.querySelector('.result').innerHTML = result.sMsg;
+			} else {
+				document.querySelector('.result').innerHTML = '<font color="red">' + result.sMsg + '<font>';
+			}
+		});
+	}
+  });
+  </script>
+ </body>
+</html>
