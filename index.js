@@ -11,8 +11,9 @@ const express = require('express');
 const session = require('express-session');
 //const mongoose = require('mongoose');
 // post로 들어오는 정보들을 받기위한 모듈
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-const mySqlStorage = require('express-mysql-session')(session);
+// const mySqlStorage = require('express-mysql-session')(session);
 const mysql = require('mysql');
 
 const app = express();
@@ -31,46 +32,65 @@ const options = {
 	database: process.env.MYSQL_DATABASE
 };
 
-var sessionConnection = mysql.createConnection(options);
-var sessionStore = new mySqlStorage({
-    expiration: 10800000,
-    createDatabaseTable: true,
-    schema: {
-        tableName: 'USERS_SESSIONS',
-        columnNames: {
-            session_id: 'session_id',
-            expires: 'expires',
-            data: 'data'
-        }
-    }
-}, sessionConnection);
+//var sessionConnection = mysql.createConnection(options);
+// var sessionStore = new mySqlStorage({
+//     expiration: 10800000,
+//     createDatabaseTable: true,
+//     schema: {
+//         tableName: 'USERS_SESSIONS',
+//         columnNames: {
+//             session_id: 'session_id',
+//             expires: 'expires',
+//             data: 'data'
+//         }
+//     }
+// }, sessionConnection);
 
-// app.use()를 다른 미들웨어를 사용하기 전에 미리 선언해두어야 별 지장없이 사용
-app.use(  // app.use를 사용해 글로벌 미들웨어를 선언.
-	session({
-		key: '69Atu22GZTSyDGW4sf4mMJdJ42436gAs',
-		secret: '3dCE84rey8R8pHKrVRedgyEjhrqGT5Hz',
-		store: sessionStore,
-		resave: false,
-		saveUninitialized: false
-	})
-);
+app.use((req, res, next) => {
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	res.setHeader('Access-Control-Allow-Methods', 'POST,GET,OPTIONS');
+	res.setHeader('Access-Control-Allow-Headers', '*');
+	if (req.method === 'OPTIONS') {
+	  return res.sendStatus(200);
+	}
+	next();
+  });
+  
+app.use(cookieParser('secret@1234'));
+// app.use(session({
+//     secret: 'secret@1234',
+//     resave: false,
+//     saveUninitialized: true,
+//     cookie:{
+//         httpOnly: true,
+//     },
+//     // name: 'connect.sid'
+// }));
+
+// 토큰검증 미들웨어
+const mw = require('./middleware/authMiddleware'); 
+app.use(mw.auth);
+
+// // app.use()를 다른 미들웨어를 사용하기 전에 미리 선언해두어야 별 지장없이 사용
+// app.use(session({
+// 	key: '69Atu22GZTSyDGW4sf4mMJdJ42436gAs',
+// 	secret: '3dCE84rey8R8pHKrVRedgyEjhrqGT5Hz',
+// 	store: sessionStore,
+// 	resave: false,  // enforce saving even if no change when new request
+// 	saveUninitialized: true, // enforcce saving even if no contents
+// 	cookie: {
+// 		// options for session cookie, httpOnly, expires, domain, path, secure, sameSite
+// 		httpOnly: true, // forbid access via JS
+// 	}
+// 	// name: 'connect.sid'  // default name for session cookie is connect.sid
+// }));
 // end - mysql-session
 
 // init express config
-app.use(express.static('public'));
+
+app.use(express.static(__dirname + '/public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(session({
-	secret: 'secret@1234',  // encryption key
-	resave: false,  // enforce saving even if no change when new request
-	saveUninitialized: true, // enforcce saving even if no contents
-	cookie: {
-		// options for session cookie, httpOnly, expires, domain, path, secure, sameSite
-		httpOnly: true, // forbid access via JS
-	}
-	// name: 'connect.sid'  // default name for session cookie is connect.sid
-}));
 
 // Node의 native Promise 사용
 //mongoose.Promise = global.Promise;
